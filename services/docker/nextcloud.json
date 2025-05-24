@@ -1,0 +1,30 @@
+{
+  "slug": "nextcloud",
+  "name": "Nextcloud",
+  "description": "Nextcloud is a suite of client-server software for creating and using file hosting services.",
+  "icon": "nextcloud.svg",
+  "website": "https://nextcloud.com/",
+  "categories": ["File Sharing", "Collaboration", "Productivity"],
+  "docker": {
+    "image": "nextcloud",
+    "ports": [
+      {
+        "containerPort": 80,
+        "exposedPort": 8080,
+        "protocol": "tcp"
+      },
+      {
+        "containerPort": 443,
+        "exposedPort": 8443,
+        "protocol": "tcp"
+      }
+    ],
+    "volumes": [
+      {
+        "name": "nextcloud_data",
+        "volumePath": "/op/nextcloud/data",
+        "containerPath": "/var/www/html/data"
+      }
+    ]
+  }
+}
