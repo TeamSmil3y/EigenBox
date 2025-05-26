@@ -1,0 +1,8 @@
+[general]
+version = "1.0"
+root-domain = "pwned.place"
+subdomain = "lstuma"
+
+[services]
+lock-dir = "/tmp/eigen-locks/"
+location = "services/"
