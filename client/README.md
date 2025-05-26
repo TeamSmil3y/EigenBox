@@ -7,13 +7,26 @@ Eigen is a python service management suite designed to simplify the management o
 - **Logging**: Access service logs for debugging and monitoring.
 
 ### ToDo
+- [X] Implement basic web interface.
+- [X] Implement basic service management features.
+- [ ] Implement search functionality for services.
 - [ ] Add logging capabilities.
 - [ ] Implement reverse proxy management.
 - [ ] Implement mesh network management.
 - [ ] Add more service management features. (?)
 
 ## Usage
-### Control a service
+### EigenWeb
+EigenWeb is a web interface for managing services. It allows you to view and control services through a user-friendly interface.
+
+#### Start the web interface
+```bash
+poetry install
+poetry run eigen-web
+```
+
+### EigenAPI
+#### Control a service
 ```python
 from eigen import Eigen
 from pathlib import Path
@@ -49,7 +62,7 @@ with my_service.lock:
     my_service.disable_reverse_proxy()
 ```
 
-### Manage configurations
+#### Manage configurations
 ```python
 ...
 my_config = my_service.config
