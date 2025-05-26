@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
-from ..models import ServiceConfig, ServiceStatus, EigenConfig
+from .config import ServiceConfig, EigenConfig
+from ..models import ServiceStatus
+import time
 from pathlib import Path
 from pydantic import BaseModel, ValidationError
 
@@ -26,13 +28,16 @@ class ServiceLock:
         self.slug = slug
         self.filepath = lock_dir / f"{slug}.lock"
 
+        self._last_release = 0
+        self._next_delay = 0
+
     def is_locked(self) -> bool:
         """
         Check if the lock file exists.
 
         :return: True if the lock file exists, False otherwise.
         """
-        return self.filepath.exists()
+        return self.filepath.exists() or (time.time() - self._last_release < self._next_delay)
 
     def acquire(self):
         """
@@ -40,9 +45,18 @@ class ServiceLock:
 
         :raises ServiceBusyError: If the lock file already exists.
         """
-        if self.filepath.exists():
-            raise ServiceBusyError(f"Service '{self.slug}' is busy.")
+        self._next_delay = 0
+        while self.is_locked():
+            time.sleep(.1)
         self.filepath.touch()
+
+    def add_delay(self, delay):
+        """
+        Add a delay before releasing the lock.
+
+        :param delay: The delay in seconds to add.
+        """
+        self._next_delay += delay
 
     def release(self):
         """
@@ -52,6 +66,7 @@ class ServiceLock:
         """
         if self.filepath.exists():
             self.filepath.unlink()
+            self._last_release = time.time()
         else:
             raise ServiceError(f"Lock file for service '{self.slug}' does not exist.")
 
@@ -94,7 +109,7 @@ class Service(ABC):
         """
         def wrapper(self, *args, **kwargs):
             if not self.lock.is_locked():
-                raise ServiceBusyError(f"Service '{self.slug}' is busy.")
+                raise ServiceBusyError(f"Lock required to perform action on '{self.slug}'.")
             return func(self, *args, **kwargs)
         return wrapper
 
@@ -111,7 +126,7 @@ class Service(ABC):
         self.slug = slug
         self.lock = ServiceLock(slug, eigen_config.services.lock_dir)
         self._config = config
-        self._config.provider_data = provider_model(**config.provider_data)
+        self._config.provider.options = provider_model(**config.provider.options)
 
     def is_busy(self) -> bool:
         """
@@ -121,7 +136,15 @@ class Service(ABC):
         """
         return self.lock.is_locked()
 
-    @abstractmethod
+    @property
+    def config(self) -> ServiceConfig:
+        """
+        Get the service configuration.
+
+        :return: The service configuration.
+        """
+        return self._config
+
     @ensure_lock
     def start(self) -> None:
         """
@@ -129,9 +152,17 @@ class Service(ABC):
 
         :raises ServiceError: if the service cannot be started.
         """
-        ...
+        self._start()
 
     @abstractmethod
+    def _start(self) -> None:
+        """
+        Start the service without acquiring the lock.
+
+        This method should be implemented by subclasses to perform the actual start operation.
+        """
+        ...
+
     @ensure_lock
     def stop(self) -> None:
         """
@@ -139,8 +170,17 @@ class Service(ABC):
 
         :raises ServiceError: if the service cannot be stopped.
         """
-        ...
+        self._stop()
+
     @abstractmethod
+    def _stop(self) -> None:
+        """
+        Stop the service without acquiring the lock.
+
+        This method should be implemented by subclasses to perform the actual stop operation.
+        """
+        ...
+
     @ensure_lock
     def restart(self) -> None:
         """
@@ -148,14 +188,32 @@ class Service(ABC):
 
         :raises ServiceError: if the service cannot be restarted.
         """
-        ...
-    @property
+        self._restart()
+
     @abstractmethod
+    def _restart(self) -> None:
+        """
+        Restart the service without acquiring the lock.
+
+        This method should be implemented by subclasses to perform the actual restart operation.
+        """
+        ...
+
+    @property
     def status(self) -> ServiceStatus:
         """
         Get the status of the service.
 
         :return: The status of the service.
         :raises ServiceError: if the status cannot be retrieved.
+        """
+        return self._status()
+
+    @abstractmethod
+    def _status(self) -> ServiceStatus:
+        """
+        Get the status of the service without acquiring the lock.
+
+        This method should be implemented by subclasses to perform the actual status retrieval.
         """
         ...

@@ -10,12 +10,12 @@ class EigenConfig(EigenConfigModel, TomlConfig):
         :param config_path: Path to the configuration file.
         :param config_data: Dictionary containing the configuration data.
         """
-        super().__init__(self, config_data)
+        super().__init__(**config_data)
 
         self._path = config_path
 
         self.services._location = self.services.location
-        self.services.location = self._path / Path(self.services._location)
+        self.services.location = self._path.parent / Path(self.services._location)
 
 
     @classmethod
@@ -31,6 +31,8 @@ class EigenConfig(EigenConfigModel, TomlConfig):
         :return: An instance of ServiceConfig with the loaded configuration.
         """
         data = cls._load_toml(filepath)
+        # handle optional fields
+        data.get("general", {}).setdefault("secret-key", None)
         return cls(filepath, data)
 
     def save(self) -> None:

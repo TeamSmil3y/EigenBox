@@ -18,7 +18,7 @@ class ServiceInfo(BaseModel):
     description: str = Field(..., description="Description of the service")
     website: str = Field(..., description="Public website for the service")
     categories: list[str] = Field(..., description="Categories the service belongs to")
-    image_src: str = Field(..., description="URL to the service's image")
+    icon: str = Field(..., description="URL to the service's image")
 
 class ServicePortforwarding(BaseModel):
     """
@@ -34,20 +34,27 @@ class ServicePortforwarding(BaseModel):
             raise ValueError("Protocol must be either 'TCP' or 'UDP'")
         return value
 
+class ServiceProvider(BaseModel):
+    """
+    Configuration for the service provider.
+    """
+    slug: str = Field(..., description="Unique identifier for the service provider")
+    options: dict = Field(..., description="Optional provider-specific configuration data")
+
 class ServiceConfig(BaseModel):
     """
     Configuration for a service.
     """
     enable: Optional[bool] = Field(..., description="Whether the service is enabled")
-    provider: str = Field(..., description="Name of the provider managing the service")
+    provider: ServiceProvider = Field(..., description="Provider information for the service")
     info: ServiceInfo = Field(..., description="Information about the service")
-    provider_data: dict = Field(..., description="Additional data specific to the provider")
-
 
 class ServiceStatus(str, Enum):
     RUNNING = "running"
     STOPPED = "stopped"
     RESTARTING = "restarting"
+    PAUSED = "paused"
     ERROR = "error"
     UPDATING = "updating"
     NOT_FOUND = "not_found"
+    UNKNOWN = "unknown"

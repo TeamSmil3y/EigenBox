@@ -3,6 +3,8 @@ from pathlib import Path
 import toml
 
 class TomlConfig(Config):
+    def __init__(self, *args):
+        print("TomlConfig")
     @classmethod
     def _load_toml(cls, filepath: Path) -> dict:
         """

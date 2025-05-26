@@ -10,7 +10,8 @@ def domain_validator(domain: str) -> str:
     :raises ValidationError: If the domain is invalid.
     :return: The validated domain name.
     """
-    if not re.match(r"^([A-Za-z0-9-]+\\.)+[A-Za-z]+$", domain):
+    if not re.match(r"^([A-Za-z0-9-]+\.)+[A-Za-z]+$", domain):
+        print(f"Invalid domain name: {domain}")
         raise ValidationError(f"Invalid domain name: {domain}")
     return domain
 

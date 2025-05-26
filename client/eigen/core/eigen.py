@@ -1,6 +1,6 @@
 from toml import TomlDecodeError
 from . import EigenConfig, Service, Provider
-from ..models import ServiceConfig
+from .config import ServiceConfig
 from ..providers import PROVIDERS
 from tomllib import load as load_toml
 import logging
@@ -13,8 +13,13 @@ class Eigen:
     """
     def __init__(self, config_path: Path):
         self.config = EigenConfig.load(config_path)
+        # ensure lock directory exists
+        if not self.config.services.lock_dir.exists():
+            logging.info(f"Creating lock directory at {self.config.services.lock_dir}")
+            self.config.services.lock_dir.mkdir(parents=True)
         self._service_configs = self._gather_configs()
         self.services = self._gather_services()
+
 
     def _gather_configs(self) -> dict[str, ServiceConfig]:
         """
@@ -58,9 +63,9 @@ class Eigen:
         :raises ProviderError: If the service cannot be created.
         :return: An instance of Service.
         """
-        provider = PROVIDERS.get(service_config.provider)
+        provider = PROVIDERS.get(service_config.provider.slug)
         if not provider:
-            raise ValueError(f"Provider '{service_config.provider}' not found for service '{service_config.slug}'.")
+            raise ValueError(f"Provider '{service_config.provider.slug}' not found for service '{service_config.slug}'.")
         return provider.create_service(slug, service_config, self.config)
 
     def _get_config(self, slug: str) -> ServiceConfig:

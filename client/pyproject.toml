@@ -9,7 +9,15 @@ authors = [
 ]
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["pydantic (>=2.11.5,<3.0.0)", "docker (>=7.1.0,<8.0.0)", "toml (>=0.10.2,<0.11.0)"]
+dependencies = [
+    "pydantic (>=2.11.5,<3.0.0)",
+    "docker (>=7.1.0,<8.0.0)",
+    "toml (>=0.10.2,<0.11.0)",
+    "streamlit-elements (>=0.1.0,<0.2.0)",
+    "pyarrow (>=20.0.0,<21.0.0)",
+    "streamlit[all] (>=1.45.1,<2.0.0)",
+    "streamlit-lottie (>=0.0.5,<0.0.6)",
+]
 
 
 [build-system]
@@ -19,9 +27,9 @@ build-backend = "poetry.core.masonry.api"
 [tool.poetry]
 packages = [
     { include = "eigen", from = "." },
-    { include = "eigenui", from = "." },
+    { include = "eigenweb", from = "." },
 ]
 
 [tool.poetry.scripts]
 eigen = "eigen.app:main"
-eigen-ui = "eigenui.app:main"
+eigen-web = "eigenweb.wrapper:main"

@@ -11,7 +11,7 @@ class ServiceConfig(ServiceConfigModel, TomlConfig):
         :param filepath: The path to the service configuration file.
         :param service_config: The configuration for the service.
         """
-        super().__init__(service_config_data)
+        super().__init__(**service_config_data)
         self._filepath = filepath
 
     @classmethod
