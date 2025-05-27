@@ -25,6 +25,9 @@ poetry install
 poetry run eigen-web
 ```
 
+![image](https://github.com/user-attachments/assets/f7a0c354-c8e4-4154-ab08-305cc604b424)
+
+
 ### EigenAPI
 #### Control a service
 ```python
