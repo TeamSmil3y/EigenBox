@@ -136,6 +136,55 @@ class Service(ABC):
         """
         return self.lock.is_locked()
 
+    @abstractmethod
+    def is_installed(self) -> bool:
+        """
+        Check if the service is installed.
+
+        :return: True if the service is installed, False otherwise.
+        """
+        ...
+
+    @ensure_lock
+    def install(self) -> None:
+        """
+        Install the service.
+
+        :raises ServiceError: if the service cannot be installed.
+        """
+        if self.is_installed():
+            raise ServiceError(f"Service '{self.slug}' is already installed.")
+        self._install()
+
+    @abstractmethod
+    def _install(self) -> None:
+        """
+        Install the service without acquiring the lock.
+
+        This method should be implemented by subclasses to perform the actual installation.
+        """
+        ...
+
+    @ensure_lock
+    def uninstall(self) -> None:
+        """
+        Uninstall the service.
+
+        :raises ServiceError: if the service cannot be uninstalled.
+        """
+        if not self.is_installed():
+            raise ServiceError(f"Service '{self.slug}' is not installed.")
+        self._uninstall()
+
+    @abstractmethod
+    def _uninstall(self) -> None:
+        """
+        Uninstall the service.
+
+        :raises ServiceError: if the service cannot be uninstalled.
+        """
+        ...
+
     @property
     def config(self) -> ServiceConfig:
         """
