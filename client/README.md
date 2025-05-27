@@ -1,5 +1,5 @@
 # Eigen
-Eigen is a python service management suite designed to simplify the management of services in a microservices architecture. It provides a unified interface for controlling services, managing configurations, and accessing logs.
+Eigen is a service management suite designed to provide a unified interface for controlling services, managing configurations, and accessing logs.
 
 ## Features
 - **Service Management**: Start, stop, restart services, and check their status.

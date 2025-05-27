@@ -107,9 +107,6 @@ class DockerService(Service):
 
         :raises ServiceError: if the service cannot be started.
         """
-        if not self._image_exists():
-            self._pull_image()
-
         client = docker.from_env()
         client.containers.get(self.slug).start()
         # small delay to ensure the container is fully started
@@ -142,6 +139,45 @@ class DockerService(Service):
         self.lock.add_delay(self.LOCK_DELAY)
         client.close()
 
+    def is_installed(self) -> bool:
+        """
+        Check if the Docker service is installed.
+
+        :return: True if the Docker service is installed, False otherwise.
+        """
+        return self._image_exists()
+
+    def _install(self) -> None:
+        """
+        Install the Docker service by pulling the image.
+
+        :raises ServiceError: if the image cannot be pulled.
+        """
+        if not self._image_exists():
+            self._pull_image()
+            self.lock.add_delay(5)
+        else:
+            raise ServiceError("Docker service is already installed.")
+
+    def _uninstall(self) -> None:
+        """
+        Uninstall the Docker service by removing the container and image.
+
+        :raises ServiceError: if the container or image cannot be removed.
+        """
+        client = docker.from_env()
+        try:
+            self.lock.add_delay(self.LOCK_DELAY)
+            if self._container_exists():
+                container = client.containers.get(self.slug)
+                container.remove(force=True)
+            if self._image_exists():
+                client.images.remove(self._config.provider.options.image, force=True)
+        except APIError as e:
+            raise ServiceError(f"Failed to uninstall Docker service: {e}")
+        finally:
+            client.close()
+
     def _status(self) -> ServiceStatus:
         """
         Get the status of the Docker service.
@@ -155,10 +191,10 @@ class DockerService(Service):
             return self._cached_status
 
         self._last_status_update = current_time
-        if not self._image_exists() or not self._container_exists():
-            status = ServiceStatus.NOT_FOUND
+        if not self._container_exists():
+            status = ServiceStatus.STOPPED if self._image_exists() else ServiceStatus.NOT_FOUND
             self._cached_status = status
-            return ServiceStatus.NOT_FOUND
+            return status
 
         client = docker.from_env()
         try:

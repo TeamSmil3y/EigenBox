@@ -1,5 +1,6 @@
 import streamlit as st
-from . import spinner
+from . import are_you_sure
+from time import sleep
 from eigen import ServiceStatus
 
 def run_with_lock(service, func):
@@ -24,15 +25,30 @@ def service_card_head(slug, service):
             st.markdown(service.config.info.description)
 
 def service_controls(slug, service, status, busy):
-    col1, col2, col3 = st.columns([1, 1, 1])
-    all_disabled = status in [ServiceStatus.UNKNOWN, ServiceStatus.ERROR] or busy
+    col1, col2, col3, col4, _ = st.columns([2, 2, 2, 2, 1])
+    corrupted = status in [ServiceStatus.NOT_FOUND, ServiceStatus.UNKNOWN, ServiceStatus.ERROR]
+    stopped = status in [ServiceStatus.STOPPED, ServiceStatus.NOT_FOUND]
+    alive = status in [ServiceStatus.RUNNING, ServiceStatus.RESTARTING, ServiceStatus.PAUSED]
+
+    if not service.is_installed():
+        with col4:
+            st.button(
+                "",
+                icon=":material/downloading:",
+                type="tertiary",
+                key=f"install_{slug}",
+                disabled=busy or alive,
+                on_click=run_with_lock(service, service.install),
+            )
+        return
+
     with col1:
         st.button(
             "",
             icon=":material/play_circle:",
             type="tertiary",
             key=f"start_{slug}",
-            disabled=status in [ServiceStatus.RUNNING, ServiceStatus.RESTARTING] or all_disabled,
+            disabled=alive or busy or corrupted,
             on_click=run_with_lock(service, service.start),
         )
     with col2:
@@ -41,7 +57,7 @@ def service_controls(slug, service, status, busy):
             icon=":material/refresh:",
             type="tertiary",
             key=f"restart_{slug}",
-            disabled=status in [ServiceStatus.RUNNING, ServiceStatus.RESTARTING] or all_disabled,
+            disabled=stopped or status in [ServiceStatus.RESTARTING] or busy or corrupted,
             on_click=run_with_lock(service, service.restart),
         )
     with col3:
@@ -50,11 +66,37 @@ def service_controls(slug, service, status, busy):
             icon=":material/stop_circle:",
             type="tertiary",
             key=f"stop_{slug}",
-            disabled=status in [ServiceStatus.STOPPED, ServiceStatus.NOT_FOUND] or all_disabled,
+            disabled=stopped or busy or corrupted,
             on_click=run_with_lock(service, service.stop),
         )
+    with col4:
+        def uninstall_service():
+            def perform_uninstall():
+                run_with_lock(service, service.uninstall)()
+                st.toast(f"Service `{service.config.info.name}` uninstalled successfully.", icon=":material/check_circle:")
+            are_you_sure(
+                message=f"Are you sure you want to uninstall the service `{service.config.info.name}`?",
+                confirm="Uninstall",
+                key=f"uninstall_{slug}",
+                callback=perform_uninstall,
+            )
 
-def service_badge(status):
+        st.button(
+            "",
+            icon=":material/delete:",
+            type="tertiary",
+            key=f"uninstall_{slug}",
+            disabled=busy or alive,
+            on_click=uninstall_service,
+        )
+
+def service_badge(status, busy, installed):
+    if busy:
+        st.badge("Busy", icon=":material/hourglass_top:", color="grey")
+        return
+    if not installed:
+        st.badge("Not Installed", icon=":material/help:", color="violet")
+        return
     match(status):
         case ServiceStatus.RUNNING:
             st.badge("Running", icon=":material/check_circle:", color="green")
@@ -75,6 +117,7 @@ def service_badge(status):
         case _:
             st.exception(f"Unknown status: {status}")
 
+@st.fragment(run_every="3s")
 def service(slug, service):
     """
     Renders a service card with its status and control buttons.
@@ -84,6 +127,13 @@ def service(slug, service):
     """
     service_status = service.status
     service_busy = service.is_busy()
+    service_installed = service.is_installed()
+
+    if "callback_queue" not in st.session_state:
+        st.session_state.callback_queue = []
+
+    while st.session_state.callback_queue:
+        st.session_state.callback_queue.pop(0)()
 
     with st.container(border=True):
         with st.container():
@@ -97,9 +147,6 @@ def service(slug, service):
         with st.container():
             col1, col2, col3 = st.columns([3, 5, 2])
             with col1:
-                if service_busy:
-                    spinner()
-
-                service_badge(service_status)
+                service_badge(service_status, service_busy, service_installed)
             with col3:
                 service_controls(slug, service, service_status, service_busy)
