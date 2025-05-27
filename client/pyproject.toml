@@ -1,7 +1,7 @@
 [project]
 name = "eigen"
 version = "0.1.0"
-description = ""
+description = "Eigen is a service management suite designed to provide a unified interface and seamless experience."
 authors = [
     { name = "lstuma", email = "lstuma@pwned.place" },
     { name = "Jonty16117" },
@@ -13,10 +13,10 @@ dependencies = [
     "pydantic (>=2.11.5,<3.0.0)",
     "docker (>=7.1.0,<8.0.0)",
     "toml (>=0.10.2,<0.11.0)",
-    "streamlit-elements (>=0.1.0,<0.2.0)",
     "pyarrow (>=20.0.0,<21.0.0)",
     "streamlit[all] (>=1.45.1,<2.0.0)",
     "streamlit-lottie (>=0.0.5,<0.0.6)",
+    "numpy (>=2.2.6,<3.0.0)",
 ]
 
 
